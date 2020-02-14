@@ -115,6 +115,77 @@ The creatinine clearance rate of the 40 year-old is healthier as it is
 
 ## Green Buildings
 
+I am initially skeptical of the analysis of the “data guru”, mainly
+because of how simple it is.
+
+<img src="ex1_collin_m_files/figure-gfm/gb_plot-1.png" style="display: block; margin: auto;" />
+
+From the above plot, the analyst’s use of the median rent for the green
+buildings and the non-rated buildings is justified because of the
+extreme positive skew shown in both. I also confirmed that the
+difference in the medians is indeed $2.60, with green buildings having
+the higher median. However, I believe that using the medians of the
+building categories as a whole ignores the cluster sampling method that
+was used to obtain this data. Clusters can vary greatly in their traits,
+so I think it would be more appropriate to take them into account in the
+analysis.
+
+<p>
+
+ 
+
+</p>
+
+<img src="ex1_collin_m_files/figure-gfm/gb_clustered_hist-1.png" style="display: block; margin: auto;" />
+
+Looking now at the difference between the mean and median rents of
+individual clusters shows a heavy concentration around 0. The reason I
+use this metric is because it can be used to determine whether or not
+the differences are skewed or more symmetric. Because most of the
+differences are close to 0, I believe that the individuals clusters are
+much less skewed than the whole dataset shown before.
+
+<p>
+
+ 
+
+</p>
+
+<img src="ex1_collin_m_files/figure-gfm/gb_green_plot-1.png" style="display: block; margin: auto;" />
+
+<img src="ex1_collin_m_files/figure-gfm/gb_green_hist-1.png" style="display: block; margin: auto;" />
+
+As I decided before, the non-rated buildings rent distribution for each
+individual cluster is mostly symmetric. Therefore, using the mean would
+be just as admissible as using the median.  
+Part of this dataset is the cluster’s mean rent, a metric that stands
+out to me as important. The cluster’s mean rent is a further
+generalization of the sampled non-rated mean for each cluster that was
+calculated earlier. Because of this, I feel that it is safe to treat the
+cluster mean rent as relatively symmetric also. As a result, I decided
+to plot the differences between each cluster’s green building rent and
+mean cluster rent. As seen above in the two visualizations of the same
+data, the distribution of these differences is heavily positively skewed
+again. Importantly, the boxplot shows that the median using this
+interpretation of the data is $2.1, significantly less than the
+analyst’s calculation.
+
+<p>
+
+ 
+
+</p>
+
+In conclusion, I would be skeptical of the analysis done by the “data
+guru”. The influence of external factors from cluster to cluster I
+believe leads to greater nuances that were not addressed by the analyst.
+I believe that more analysis should be done into the differences between
+the green and non-certified buildings to decide whether or not a
+green-building is worth investing in from an economic perspective. From
+my analysis of parts of the data, I believe that the benefits of
+green-building investment are not as good as they may seem on the
+surface level.
+
 ## Milk Prices
 
 In this scenario, we are asked to find the optimal price to sell units
