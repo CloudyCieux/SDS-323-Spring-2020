@@ -1,9 +1,18 @@
 library(mosaic)
 library(tinyverse)
 
-plot(creatclear ~ age, data = creatinine)
+creatinine = read.csv("creatinine.csv", header = TRUE)
 
 lm1 = lm(creatclear ~ age, data = creatinine)
+
+ggplot(creatinine, aes(x = age, y = creatclear)) +
+  geom_point(size = 1) +
+  geom_abline(slope = coef(lm1)[2], intercept = coef(lm1)[1]) +
+  labs(title = "Age vs. Creatinine Clearance Rate",
+       x = "Age",
+       y = "Creatinine Clearance Rate (ml/Minute)") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
 
 new_data = data.frame(age = c(40, 55, 60))
 l = predict(lm1, new_data)
