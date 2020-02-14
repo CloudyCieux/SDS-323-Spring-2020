@@ -64,37 +64,3 @@ ggplot(gb_green, aes(x = Rent.diff)) +
 
 mean(gb_green$Rent.diff)
 median(gb_green$Rent.diff)
-
-
-
-
-
-
-
-gb_green_clustered = gb_clustered %>%
-  filter(green_rating == "Green-certified")
-gb_non_rated_clustered = gb_clustered %>%
-  filter(green_rating == "Non-rated")
-
-cluster_intersect = intersect(gb_green_clustered$cluster,
-                              gb_non_rated_clustered$cluster)
-
-gb_green_clustered = gb_green_clustered %>%
-  filter(cluster %in% cluster_intersect)
-gb_non_rated_clustered = gb_non_rated_clustered %>%
-  filter(cluster %in% cluster_intersect)
-
-Rent.diff.med = gb_green_clustered$Rent.med - gb_non_rated_clustered$Rent.med
-median(Rent.diff.med)
-Rent.diff.mean = gb_green_clustered$Rent.mean - gb_non_rated_clustered$Rent.mean
-mean(Rent.diff.mean)
-
-gb_green = gb %>%
-  filter(green_rating == "Green-certified") %>%
-  mutate(Rent.diff = Rent - cluster_rent)
-ggplot(gb_green, aes(x = "", y = Rent.diff)) +
-  geom_boxplot()
-ggplot(gb_green, aes(x = Rent.diff)) +
-  geom_histogram()
-median(gb_green$Rent.diff)
-mean(gb_green$Rent.diff)
