@@ -1,0 +1,357 @@
+---
+title: "Exercise 1"
+output: github_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries, include = FALSE}
+library(mosaic)
+library(tidyverse)
+```
+
+## Flights at ABIA
+
+```{r read_and_preprocess, include = FALSE}
+ABIA = read.csv('ABIA.csv', header = TRUE)
+
+# Some preprocessing
+ABIA$Month = month.abb[ABIA$Month]
+ABIA$Month = factor(ABIA$Month, levels = month.abb)
+
+# Separating departures and arrivals
+ABIA_out = ABIA %>%
+  filter(Origin == 'AUS')
+ABIA_in = ABIA %>%
+  filter(Dest == 'AUS')
+```
+
+The Austin-Bergstrom International Airport is among the busiest of airports in Texas, so it is inevitable that there will be possible delays when flying to and from it. The goal of the following figures is to provide information that can help one decide the optimal day and time to fly in or out of ABIA, as well as the airline carrier to fly with.
+<p>&nbsp;</p>
+
+The following two figures show the optimal times throughout the day to arrive and depart from ABIA to minimize delays.
+
+```{r ABIA_out_delay_by_hour_setup, include = FALSE}
+# Question 1: Best time to arrive and depart from ABIA to minimize delays
+
+# Discretize CRSDepTime
+ABIA_out = ABIA_out %>%
+  mutate(CRSDepTime.hour = round(CRSDepTime / 100, 0))
+
+# Only use data with a DepDelay
+ABIA_out_delay = ABIA_out %>%
+  filter(DepDelay > 0)
+
+# Calculate average DepDelay by hour
+ABIA_out_delay_by_hour = ABIA_out_delay %>%
+  filter(CRSDepTime.hour != 22 & CRSDepTime.hour != 1) %>%
+  group_by(CRSDepTime.hour) %>%
+  summarize(AvgDelay.hour = mean(DepDelay, na.rm = TRUE))
+```
+
+
+```{r ABIA_out_delay_by_hour, fig.align = 'center', echo = FALSE}
+# Average departure delay by hour
+ggplot(ABIA_out_delay_by_hour, aes(x = CRSDepTime.hour, y = AvgDelay.hour)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Average Delay with respect to Scheduled Departure Time from ABIA",
+       x = "Departure Hour",
+       y = "Average Delay (minutes)") +
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+The above figure shows average delay throughout the day for flights departing from ABIA. It appears that departing either early in the morning or late at night would be ideal to minimize delays. It also appears that one should avoid departing around noon and especially around the evening if they wish to minimize delays.
+<p>&nbsp;</p>
+
+```{r ABIA_in_delay_by_hour_setup, include = FALSE}
+# Discretize CRSArrTime
+ABIA_in = ABIA_in %>%
+  mutate(CRSArrTime.hour = ifelse(round(CRSArrTime / 100, 0) == 0, 
+                                  24, round(CRSArrTime / 100, 0)))
+
+# Only use data with an ArrDelay
+ABIA_in_delay = ABIA_in %>%
+  filter(ArrDelay > 0)
+
+# Calculate average ArrDelay by hour
+ABIA_in_delay_by_hour = ABIA_in_delay %>%
+  filter(CRSArrTime.hour > 5) %>%
+  group_by(CRSArrTime.hour) %>%
+  summarize(AvgDelay.hour = mean(ArrDelay, na.rm = TRUE))
+```
+
+```{r ABIA_in_delay_by_hour, fig.align = 'center', echo = FALSE}
+# Average arrival delay by hour
+ggplot(ABIA_in_delay_by_hour, aes(x = CRSArrTime.hour, y = AvgDelay.hour)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Average Delay With Respect to Scheduled Arrival Time at ABIA",
+       x = "Arrival Hour",
+       y = "Average Delay (minutes)") +
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+In this second figure above, the average delay for flights arriving at ABIA is shown. Similarly to the departures, delay is minimized early in the morning. However, it appears that delay shows a steady increase throughout the day peaking in the hours of night.
+<p>&nbsp;</p>
+
+Knowing what time of day is ideal for arriving or departing from ABIA is only part of the story, so the next figure will show the optimal days during the year to fly in and out of ABIA to minimize delays.
+
+```{r ABIA_avg_daily_delay_setup, include = FALSE}
+# Question 2: Best time of year to arrive and depart from ABIA to minimize delays
+
+ABIA_delay = ABIA %>%
+  filter(DepDelay > 0)
+
+ABIA_avg_daily_delay = ABIA_delay %>%
+  group_by(Month, DayofMonth) %>%
+  summarize(AvgDelay.daily = mean(DepDelay, na.rm = TRUE))
+```
+
+```{r ABIA_avg_daily_delay, fig.align = 'center', echo = FALSE}
+ggplot(ABIA_avg_daily_delay, aes(x = DayofMonth, y = AvgDelay.daily)) +
+  geom_line() +
+  facet_wrap(~Month) +
+  labs(title = "2008 Average Daily Departure Delay at ABIA",
+       x = "Day of Month",
+       y = "Average Delay (minutes)") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+As shown above, the average daily delay in 2008 at ABIA fluctuated quite a bit day to day, but the highest delays were seen in mid March, late November, and late December. It is highly likely the reason for these increases in delays is a result of the heavy amount of travel that happens during these times, as they align with Spring Break, Thanksgiving Break, and Christmas respectively.
+<p>&nbsp;</p>
+
+Finally, in addition to choosing the optimal day and time to fly in and out of ABIA, choice of airline carrier influences the travelling experience.
+
+```{r ABIA_cancel_freq_setup, include = FALSE}
+# Question 3: Avoid these airports with frequent cancellations
+
+# Cancellation frequency of each airline carrier
+ABIA_cancel_freq = ABIA %>%
+  group_by(UniqueCarrier) %>%
+  summarize(Cancelled.freq = sum(Cancelled == 1) / n() * 100)
+```
+
+```{r ABIA_cancel_freq, fig.align = 'center', echo = FALSE}
+ggplot(ABIA_cancel_freq, aes(x = reorder(UniqueCarrier, desc(Cancelled.freq)), y = Cancelled.freq)) +
+  geom_bar(stat = 'identity') +
+  labs(title = "Percent of Flights Cancelled by Various Airline Carriers",
+       x = "Airline Carrier",
+       y = "Percent of Flights Cancelled") +
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+```{r ABIA_avg_delay_setup, include = FALSE}
+# Average arrival delays of each airline carrier
+ABIA_avg_delay = ABIA %>%
+  filter(DepDelay > 0) %>%
+  group_by(UniqueCarrier) %>%
+  summarize(AvgDelay.carrier = mean(DepDelay, na.rm = TRUE))
+```
+
+```{r ABIA_avg_delay, fig.align = 'center', echo = FALSE}
+ggplot(ABIA_avg_delay, aes(x = reorder(UniqueCarrier, desc(AvgDelay.carrier)),
+                           y = AvgDelay.carrier)) +
+  geom_bar(stat = 'identity') +
+  labs(title = "Average Departure Delay of Various Airline Carriers",
+       x = "Airline Carrier",
+       y = "Average Departure Delay (minutes)") +
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+From these two figures, it is clear which airline carriers should be flown with caution as they either have higher cancellations or higher delays. For the ideal flying experience, choosing a carrier with less delays and a low previous cancellation percentage would be recommended.
+
+## Regression Practice
+
+```{r read_and_creatinine_setup, include = FALSE}
+creatinine = read.csv("creatinine.csv", header = TRUE)
+
+lm1 = lm(creatclear ~ age, data = creatinine)
+
+new_data = data.frame(age = c(40, 55, 60))
+l = predict(lm1, new_data)
+l[2]
+
+# 1. We should expect a creatinine clearance rate of
+#    113.723 mL/minute for the average 55 year-old.
+
+coef(lm1)
+
+# 2. The rate at which the creatinine clearance rate
+#    changes is about -0.620 mL/minute each year one
+#    gets older.
+
+135 - l[1]
+112 - l[3]
+
+# 3. The creatinine clearance rate of the 40 year-old
+#    is healthier as it is 11.980 mL/minute above the
+#    average while it is 1.376 mL/minute for the 60
+#    year-old. 
+```
+
+```{r creatinine, fig.align = 'center', echo = FALSE}
+ggplot(creatinine, aes(x = age, y = creatclear)) +
+  geom_point(size = 1) +
+  geom_abline(slope = coef(lm1)[2], intercept = coef(lm1)[1]) +
+  labs(title = "Age vs. Creatinine Clearance Rate",
+       x = "Age",
+       y = "Creatinine Clearance Rate (ml/Minute)") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+```{r regression_practice_png, fig.align = 'center', fig.width = 5, fig.height = 0.5, echo = FALSE}
+library(png)
+library(grid)
+
+grid.raster(readPNG("ex1_collin_m_files/regression_practice.png"))
+```
+
+(@) What creatinine clearance rate should we expect, on average, for a 55-year-old?
+
+We should expect a creatinine clearance rate of 113.723 mL/minute for the average 55 year-old.
+<p>&nbsp;</p>
+
+(@) How does creatinine clearance rate change with age?
+
+The rate at which the creatinine clearance rate changes is about -0.620 mL/minute each year one gets older.
+<p>&nbsp;</p>
+
+(@) Whose creatinine clearance rate is healthier (higher) for their age: a 
+40-year-old with a rate of 135, or a 60-year-old with a rate of 112?
+
+The creatinine clearance rate of the 40 year-old is healthier as it is 11.980 mL/minute above the average while it is 1.376 mL/minute for the 60 year-old.
+
+## Green Buildings
+
+## Milk Prices
+
+In this scenario, we are asked to find the optimal price to sell units of milk in order to maximize profit. This requires finding quantity Q as a function of price P, since net profit N is based on both of these variables.
+
+```{r read_milk, include = FALSE}
+milk = read.csv("milk.csv", header = TRUE)
+```
+
+```{r plot_milk, fig.align = 'center', echo = FALSE}
+ggplot(milk, aes(x = price, y = sales)) +
+  geom_point(size = 1) +
+  labs(title = "Price vs. Quantity Sold of Milk",
+       x = "Price",
+       y = "Quantity of Units Sold") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+Looking at the plot of the milk sales data above, the relationship appears to be a power law. Therefore, we should convert both the x and y axes with the log function.
+<p>&nbsp;</p>
+
+```{r plot_log_milk, fig.align = 'center', echo = FALSE}
+ggplot(milk, aes(x = log(price), y = log(sales))) +
+  geom_point(size = 1) +
+  labs(title = "log(Price) vs. log(Quantity Sold) of Milk",
+       x = "log(Price)",
+       y = "log(Quantity of Units Sold)") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+As expected, applying the log function on both axes of the previous plot yields a new plot that appears to show a negative linear relationship. With this, we can apply OLS to find a linear equation to fit this data.
+<p>&nbsp;</p>
+
+```{r log_milk_regression, include = FALSE}
+lm1 = lm(log(sales) ~ log(price), data = milk)
+```
+
+```{r plot_log_milk_regression, fig.align = 'center', echo = FALSE}
+ggplot(milk, aes(x = log(price), y = log(sales))) +
+  geom_point(size = 1) +
+  geom_abline(slope = coef(lm1)[2], intercept = coef(lm1)[1]) +
+  labs(title = "log(Price) vs. log(Quantity Sold) of Milk",
+       x = "log(Price)",
+       y = "log(Quantity of Units Sold)") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+```{r milk_lin_reg_png, fig.align = 'center', fig.width = 5, fig.height = 0.5, echo = FALSE}
+library(png)
+library(grid)
+
+grid.raster(readPNG("ex1_collin_m_files/milk_lin_reg.png"))
+```
+
+Shown here is the previous plot with the linear regression line added.
+<p>&nbsp;</p>
+
+```{r milk_regression_setup, include = FALSE}
+coef(lm1)
+alpha = exp(coef(lm1)[1])
+rate = coef(lm1)[2]
+```
+
+```{r plot_milk_regression, fig.align = 'center', echo = FALSE}
+ggplot(milk, aes(x = price, y = sales)) +
+  geom_point(size = 1) +
+  stat_function(fun = function(x) alpha * x ^ rate) +
+  labs(title = "Price vs. Quantity Sold of Milk",
+       x = "Price",
+       y = "Quantity of Units Sold") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+```{r milk_power_reg_png, fig.align = 'center', fig.width = 5, fig.height = 0.5, echo = FALSE}
+library(png)
+library(grid)
+
+grid.raster(readPNG("ex1_collin_m_files/milk_power_reg.png"))
+```
+
+Now, using the coefficients yielded from OLS on the previous plot, the new regression curve can be calculated for the original data. Shown above is the plot of the original data with the regression curve following a power law relationship.
+<p>&nbsp;</p>
+
+```{r plot_profit_milk, fig.align = 'center', echo = FALSE}
+ggplot(data.frame(x = c(2, 3)), aes(x = x)) +
+  stat_function(fun = function(x) (x - 1) * alpha * x ^ rate) +
+  labs(title = "Price vs. Net Profit",
+       x = "Price",
+       y = "Net Profit") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+```{r milk_net_profit_png, fig.align = 'center', fig.width = 5, fig.height = 0.4, echo = FALSE}
+library(png)
+library(grid)
+
+grid.raster(readPNG("ex1_collin_m_files/milk_net_profit.png"))
+```
+
+Now that we have a function for Q in terms of P, we can plug that into the equation for N which is shown in the graph above. For per-unit cost C we used $1.
+<p>&nbsp;</p>
+
+```{r plot_profit_zoomed_milk, fig.align = 'center', echo = FALSE}
+ggplot(data.frame(x = c(2.6, 2.63)), aes(x = x)) +
+  stat_function(fun = function(x) (x - 1) * alpha * x ^ rate) +
+  labs(title = "Price vs. Net Profit",
+       x = "Price",
+       y = "Net Profit") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+```{r milk_net_profit_qsub_png, fig.align = 'center', fig.width = 5, fig.height = 0.5, echo = FALSE}
+library(png)
+library(grid)
+
+grid.raster(readPNG("ex1_collin_m_files/milk_net_profit_qsub.png"))
+```
+
+Zooming in on the graph, we see that the price that yields the maximum net profit of about 38.25% is approximately $2.62. 
