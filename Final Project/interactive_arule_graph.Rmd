@@ -1,0 +1,58 @@
+---
+title: "Interactive Association Rule Graph"
+author: "Collin McMahon"
+output: html_document
+always_allow_html: yes
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(ggplot2)
+library(LICORS)
+library(mosaic)
+library(corrplot)
+library(factoextra)
+library(arules)
+library(arulesViz)
+```
+
+Hello! This is just a fun little interactive version of my association rule graph that I used to analyze the rules. Using the static one was so disgusting, especially with the overlapping text. This one is super nice because you can zoom in and out, search for specific rules or anime by their title, and see the characteristics of a rule such as their support, confidence, and lifts. Enjoy! :)
+
+```{r message = FALSE, echo = FALSE}
+anime_main = read.csv("anime.csv")
+rating_main = read.csv("rating.csv")
+
+# Replace anime IDs with their actual name
+rating_main$name = anime_main$name[match(rating_main$anime_id, anime_main$anime_id)]
+rating_main$name = as.character(rating_main$name)
+rating_main = rating_main[c(1, 4, 3)]
+
+# Treat IDs as factors
+anime_main$anime_id = as.factor(anime_main$anime_id)
+rating_main$user_id = as.factor(rating_main$user_id)
+
+# Treat episodes as numeric
+anime_main$episodes = as.numeric(anime_main$episodes)
+
+# Remove anime with NA ratings
+anime_main = na.omit(anime_main)
+
+### Association Rules
+
+watch_lists = split(x = rating_main$name, f = rating_main$user_id)
+
+watch_lists = lapply(watch_lists, unique)
+
+watch_trans = as(watch_lists, "transactions")
+
+anime_rules = apriori(watch_trans, 
+                      parameter = list(support = .1, confidence = .25, maxlen = 5),
+                      control = list(verbose = FALSE))
+
+set.seed(7)
+
+sub1 = head(anime_rules, 100, by = 'lift')
+plot(sub1, method = 'graph',  engine = "htmlwidget")
+```
